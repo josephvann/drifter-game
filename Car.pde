@@ -1,7 +1,7 @@
 class Car {
-  float power = 5.5;
+  float power = 6.5;
   float currentPower = 3.5;
-  int accelerationSteps = 12;
+  int accelerationSteps = 8;
   int score = 0;
   int currentAccelerationSteps = 12;
   float coastCoefficient = 0.995;
@@ -17,10 +17,10 @@ class Car {
   PVector[] corners = new PVector[4];
 
   // strangely, lower is better!
-  float brakePower = 0.9;
+  float brakePower = 0.95;
 
   int currentGear = 0;
-  float[] gearbox = new float[5];
+  float[] gearbox = new float[6];
 
   boolean accelerating = false;
   boolean braking = false;
@@ -37,11 +37,12 @@ class Car {
   PVector pos = new PVector(width/2, height/2);
 
   Car() {
-    gearbox[0] = 0.25;
-    gearbox[1] = 0.4;
+    gearbox[0] = 0.3;
+    gearbox[1] = 0.5;
     gearbox[2] = 0.8;
     gearbox[3] = 1.1;
     gearbox[4] = 1.5;
+    gearbox[5] = 2.0;
     this.gearChange(-1);
   }
   void update() {
@@ -56,14 +57,14 @@ class Car {
 
     
 
-    this.currentGrip = (36-this.wheelSpeed)/12;
+    this.currentGrip = (50-this.wheelSpeed)/24;
 
     this.vehicleDirection += this.steeringAngle*this.currentGrip;
     
-    this.wheelSpeed -= abs(this.steeringAngle/0.6);
+    this.wheelSpeed -= abs(this.steeringAngle/1.2);
     this.pos.y -= cos(this.vehicleDirection)*this.wheelSpeed;
     this.pos.x += sin(this.vehicleDirection)*this.wheelSpeed;
-    this.steeringAngle*= 0.85;
+    this.steeringAngle*= 0.9;
     //if (this.vehicleDirection > this.fullLock) {
     //  this.vehicleDirection = this.fullLock; 
     //}
@@ -120,7 +121,7 @@ class Car {
   void gearChange(int dir) {
     if (dir == -1 && this.currentGear > 0) {
       this.currentGear -= 1;
-    } else if (dir == 1 && this.currentGear < 4) {
+    } else if (dir == 1 && this.currentGear < 5) {
       this.currentGear += 1;
     }
     this.currentPower = this.power/this.gearbox[this.currentGear];

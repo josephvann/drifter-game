@@ -1,6 +1,6 @@
 
 class Car {
-  float power = 6.5;
+  float power = 12.0;
   float currentPower = 3.5;
   int accelerationSteps = 8;
   int score = 0;
@@ -11,9 +11,6 @@ class Car {
   float steeringRadius = 12.0;
   float vehicleDirection = 0.0;
   float steeringAngle = 0.0;
-  float bumperBounceCoefficient = 0.5;
-
-
   float fullLock = 2.5;
   float currentGrip = 1.0;
 
@@ -27,11 +24,13 @@ class Car {
   boolean braking = false;
   boolean reversing = false;
 
-  int health = 5;
+  float health = 100;
 
   float trackWidth = 80.0;
   float wheelBase = 140.0;
 
+
+  // collision detection variables
   // fl, fr, rl, rr
   PVector[] corners = new PVector[4];
   // pythagoras to find distance from centre of car to corner
@@ -42,11 +41,18 @@ class Car {
   PVector bBottomRight = new PVector(0, 0);
   boolean crashed = false;
   int crashedCorner = 0;
+  float bumperBounceCoefficient = 0.5;
+  float vehicleCrashAngleDifference = 0.0;
+  int framesToCorrect = 30;
+  float headOnCollisionThreshold = PI/2.5;
+  float repulsionDirection;
+  // end of collision detection variables
+
 
   color carFill = color(188, 65, 72);
 
   float wheelSpeed = 0.0;
-
+  // need to put pos in the constructor so that track can move car without fucking up obstacles and grid markers.
   PVector pos = new PVector(width/2, height/2);
 
   Car() {
@@ -162,52 +168,60 @@ class Car {
   }
 
   void checkCollision(Block b) {
-    
-      this.bTopLeft.x = b.pos.x;
-      this.bTopLeft.y = b.pos.y;
-      this.bBottomRight.x = b.pos.x + (b.size.x);
-      this.bBottomRight.y = b.pos.y + (b.size.y);
 
-      for (int i = 0; i < 3; i++) {
-        if (corners[i].x > this.bTopLeft.x && 
-          corners[i].x < this.bBottomRight.x &&
-          corners[i].y > this.bTopLeft.y &&
-          corners[i].y < this.bBottomRight.y) {
-          
-          this.crashedCorner = i;
-          this.repel(corners[i]);
-          break;
-        
+    this.bTopLeft.x = b.relativePos.x;
+    this.bTopLeft.y = b.relativePos.y;
+    this.bBottomRight.x = b.relativePos.x + (b.size.x);
+    this.bBottomRight.y = b.relativePos.y + (b.size.y);
+
+    for (int i = 0; i < 3; i++) {
+      if (corners[i].x > this.bTopLeft.x && 
+        corners[i].x < this.bBottomRight.x &&
+        corners[i].y > this.bTopLeft.y &&
+        corners[i].y < this.bBottomRight.y) {
+
+        this.crashedCorner = i;
+        this.repel(corners[i]);
+        break;
       }
     }
   }
 
   void repel(PVector corner) {
-    float repulsionDirection = PVector.angleBetween(corner, this.pos);
-    this.applyForce(PVector.fromAngle(repulsionDirection).mult(this.wheelSpeed/2));
     
+    this.repulsionDirection = PVector.angleBetween(corner, this.pos);
+    //this.applyForce(PVector.fromAngle(repulsionDirection).mult(this.wheelSpeed/2));
+
+    this.vehicleCrashAngleDifference = ((repulsionDirection - PI) - this.vehicleDirection);
+    println(abs(this.vehicleCrashAngleDifference));
+
+    // this is a front corner striking.
     // this is a front corner striking.
     if (this.crashedCorner == 0 || this.crashedCorner == 1) {
-      if(this.crashedCorner == 0) {
-        this.vehicleDirection += 0.05;  
+      if (this.crashedCorner == 0) {
+        this.vehicleDirection += this.cornerTheta / this.framesToCorrect;
       }
-      if(this.crashedCorner == 1) {
-        this.vehicleDirection -= 0.05;  
+      if (this.crashedCorner == 1) {
+        this.vehicleDirection -= this.cornerTheta / this.framesToCorrect;
       }
-      this.wheelSpeed -= this.wheelSpeed * this.bumperBounceCoefficient;
+      this.wheelSpeed -= wheelSpeed / 3;
     } else {
       if (this.crashedCorner == 2) {
         // rear left corner
-        this.vehicleDirection -= 0.0125;
+        this.vehicleDirection -= this.cornerTheta / (this.framesToCorrect * 3);
       } else if (this.crashedCorner == 3) {
         // rear right corner
-        this.vehicleDirection += 0.0125;
+        this.vehicleDirection += this.cornerTheta / (this.framesToCorrect * 3);
       }
-      this.wheelSpeed -= this.wheelSpeed * (this.bumperBounceCoefficient /2);
+      this.wheelSpeed -= this.wheelSpeed / 3;
     }
+    //if (this.repulsionDirection > this.headOnCollisionThreshold) {
+      //this.wheelSpeed = -(this.wheelSpeed * sin(repulsionDirection));  
+    //}
     
   }
+
   void applyForce(PVector force) {
-      this.pos.sub(force);
-    }
+    this.pos.sub(force);
   }
+}
